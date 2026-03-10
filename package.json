@@ -27,6 +27,15 @@
       "mode": "menu-bar"
     }
   ],
+  "preferences": [
+    {
+      "name": "apiKey",
+      "type": "password",
+      "title": "Vercel API Key",
+      "description": "Personal API token used to query your Vercel analytics data.",
+      "required": false
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.104.6",
     "@raycast/utils": "^1.17.0"

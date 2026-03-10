@@ -1,12 +1,16 @@
-import { Action, ActionPanel, Form, List, Toast, showToast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  List,
+  Toast,
+  getPreferenceValues,
+  openExtensionPreferences,
+  showToast,
+} from "@raycast/api";
 import { useEffect, useState } from "react";
 
-import { clearApiKey, getApiKey, setApiKey, setTrackedProject } from "./storage";
+import { setTrackedProject } from "./storage";
 import { listProjects, VercelProject } from "./vercel";
-
-type ApiKeyFormValues = {
-  apiKey: string;
-};
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -17,18 +21,18 @@ function getErrorMessage(error: unknown): string {
 
 export default function AddTrackerView() {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState("");
   const [projects, setProjects] = useState<VercelProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmittingKey, setIsSubmittingKey] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function bootstrap() {
-      const storedApiKey = await getApiKey();
+      const preferences = getPreferenceValues<{ apiKey?: string }>();
+      const storedApiKey = preferences.apiKey?.trim() || null;
       if (!storedApiKey) {
+        setStatusMessage("Set your Vercel API key in extension preferences");
         return;
       }
 
@@ -81,63 +85,10 @@ export default function AddTrackerView() {
         title: "Could not load projects",
         message: getErrorMessage(error),
       });
-      await clearApiKey();
-      setApiKeyState(null);
-      setStatusMessage("Could not load projects with saved API key");
+      setStatusMessage("Could not load projects with the configured API key");
     } finally {
       setIsLoading(false);
     }
-  }
-
-  async function submitApiKey(values: ApiKeyFormValues) {
-    const trimmedValue = values.apiKey.trim();
-    if (!trimmedValue) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "API key is required",
-      });
-      return;
-    }
-
-    setIsSubmittingKey(true);
-    setStatusMessage(null);
-
-    try {
-      const loadedProjects = await listProjects(trimmedValue);
-      await setApiKey(trimmedValue);
-      setApiKeyState(trimmedValue);
-      setProjects(loadedProjects);
-      setApiKeyInput("");
-      if (loadedProjects.length === 0) {
-        setStatusMessage("API key is valid, but no projects were returned");
-      }
-
-      await showToast({
-        style: Toast.Style.Success,
-        title: "Vercel API key saved",
-      });
-    } catch (error) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Invalid API key",
-        message: getErrorMessage(error),
-      });
-    } finally {
-      setIsSubmittingKey(false);
-      setIsLoading(false);
-    }
-  }
-
-  async function resetApiKey() {
-    await clearApiKey();
-    setApiKeyState(null);
-    setProjects([]);
-    setStatusMessage(null);
-
-    await showToast({
-      style: Toast.Style.Success,
-      title: "API key removed",
-    });
   }
 
   async function selectProject(project: VercelProject) {
@@ -152,22 +103,17 @@ export default function AddTrackerView() {
 
   if (!apiKey) {
     return (
-      <Form
-        isLoading={isSubmittingKey}
-        actions={
-          <ActionPanel>
-            <Action.SubmitForm title="Save API Key" onSubmit={submitApiKey} />
-          </ActionPanel>
-        }
-      >
-        <Form.PasswordField
-          id="apiKey"
-          title="Vercel API Key"
-          placeholder="Paste your Vercel API key"
-          value={apiKeyInput}
-          onChange={setApiKeyInput}
+      <List>
+        <List.EmptyView
+          title="Missing Vercel API key"
+          description="Set your API key in extension preferences, then rerun this command."
+          actions={
+            <ActionPanel>
+              <Action title="Open Extension Preferences" onAction={openExtensionPreferences} />
+            </ActionPanel>
+          }
         />
-      </Form>
+      </List>
     );
   }
 
@@ -182,7 +128,7 @@ export default function AddTrackerView() {
             <ActionPanel>
               <Action title="Track Project" onAction={() => selectProject(project)} />
               <Action title="Reload Projects" onAction={() => fetchProjects(apiKey)} />
-              <Action title="Use Different API Key" onAction={resetApiKey} />
+              <Action title="Open Extension Preferences" onAction={openExtensionPreferences} />
             </ActionPanel>
           }
         />

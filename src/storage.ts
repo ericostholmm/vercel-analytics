@@ -1,6 +1,5 @@
 import { LocalStorage } from "@raycast/api";
 
-const API_KEY_STORAGE_KEY = "vercel-api-key";
 const TRACKED_PROJECT_STORAGE_KEY = "tracked-project";
 
 export type TrackedProject = {
@@ -8,22 +7,6 @@ export type TrackedProject = {
   name: string;
   accountId?: string;
 };
-
-export async function getApiKey(): Promise<string | null> {
-  const value = await LocalStorage.getItem<string>(API_KEY_STORAGE_KEY);
-  if (!value || typeof value !== "string" || value.trim().length === 0) {
-    return null;
-  }
-  return value;
-}
-
-export async function setApiKey(apiKey: string): Promise<void> {
-  await LocalStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
-}
-
-export async function clearApiKey(): Promise<void> {
-  await LocalStorage.removeItem(API_KEY_STORAGE_KEY);
-}
 
 export async function getTrackedProject(): Promise<TrackedProject | null> {
   const rawValue = await LocalStorage.getItem<string>(TRACKED_PROJECT_STORAGE_KEY);

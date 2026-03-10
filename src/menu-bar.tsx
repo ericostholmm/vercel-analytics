@@ -1,7 +1,7 @@
-import { Icon, LaunchType, MenuBarExtra, launchCommand } from "@raycast/api";
+import { Icon, LaunchType, MenuBarExtra, getPreferenceValues, launchCommand } from "@raycast/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getApiKey, getTrackedProject, TrackedProject } from "./storage";
+import { getTrackedProject, TrackedProject } from "./storage";
 import { getProjectTrafficCoreMetrics, ProjectTrafficCoreMetrics } from "./vercel";
 
 function formatNumber(value: number): string {
@@ -34,7 +34,9 @@ export default function MenuBarCommand() {
     }
 
     try {
-      const [storedApiKey, storedProject] = await Promise.all([getApiKey(), getTrackedProject()]);
+      const preferences = getPreferenceValues<{ apiKey?: string }>();
+      const storedApiKey = preferences.apiKey?.trim() || null;
+      const storedProject = await getTrackedProject();
       setApiKey(storedApiKey);
       setTrackedProject(storedProject);
 
